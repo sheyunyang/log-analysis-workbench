@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>日志分析工作台 · 安全工具箱</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0b0f1a;--bg2:#101828;--card:rgba(255,255,255,.045);--brd:rgba(255,255,255,.09);
+--tx:#e5e9f2;--mut:#8b94a7;--cy:#22d3ee;--pu:#a78bfa;--gr:#34d399;--rd:#f43f5e;--am:#facc15}
+body{background:radial-gradient(1200px 600px at 80% -10%,rgba(167,139,250,.14),transparent),
+radial-gradient(900px 500px at -10% 20%,rgba(34,211,238,.12),transparent),var(--bg);
+color:var(--tx);font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;min-height:100vh}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px 60px}
+nav{position:sticky;top:0;z-index:9;backdrop-filter:blur(14px);background:rgba(11,15,26,.72);border-bottom:1px solid var(--brd)}
+nav .wrap{display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px}
+.logo{font-weight:800;letter-spacing:.5px;font-size:15px}
+.logo b{background:linear-gradient(90deg,var(--cy),var(--pu));-webkit-background-clip:text;background-clip:text;color:transparent}
+.badge{font-size:12px;color:var(--cy);border:1px solid rgba(34,211,238,.35);padding:3px 10px;border-radius:99px;white-space:nowrap}
+.hero{padding:56px 0 28px}
+.hero h1{font-size:34px;line-height:1.25;margin:14px 0 12px}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,var(--cy),var(--pu));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.lead{color:var(--mut);font-size:15px;line-height:1.85;max-width:860px}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.tag{font-size:12px;color:var(--mut);background:var(--card);border:1px solid var(--brd);padding:4px 12px;border-radius:99px}
+.panel{background:linear-gradient(180deg,rgba(34,211,238,.06),rgba(167,139,250,.05)),var(--card);
+border:1px solid var(--brd);border-radius:16px;padding:22px 24px;margin:22px 0}
+.panel h2{font-size:17px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.panel h2::before{content:"";width:4px;height:16px;border-radius:2px;background:linear-gradient(180deg,var(--cy),var(--pu))}
+.scen{line-height:1.9;color:#c6cede;font-size:14.5px}
+.scen b{color:var(--cy)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:18px}
+.card{background:var(--card);border:1px solid var(--brd);border-radius:16px;padding:20px;transition:.25s;backdrop-filter:blur(8px)}
+.card:hover{transform:translateY(-3px);border-color:rgba(34,211,238,.35);box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.card h3{font-size:15.5px;margin-bottom:6px}
+.card .d{color:var(--mut);font-size:13px;margin-bottom:14px;line-height:1.7}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+input,select,textarea{background:rgba(0,0,0,.35);border:1px solid var(--brd);color:var(--tx);border-radius:10px;padding:9px 12px;font-size:13.5px;font-family:inherit;outline:none;width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--cy)}
+textarea{min-height:96px;resize:vertical;line-height:1.6;font-family:Consolas,Menlo,monospace;font-size:12.5px}
+button{cursor:pointer;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:600;color:#04121a;background:linear-gradient(90deg,var(--cy),var(--gr));transition:.2s}
+button:hover{filter:brightness(1.12)}
+button.ghost{background:rgba(255,255,255,.08);color:var(--tx);border:1px solid var(--brd)}
+button.pu{background:linear-gradient(90deg,var(--pu),var(--cy));color:#0b0f1a}
+.out{background:rgba(0,0,0,.32);border:1px solid var(--brd);border-radius:10px;padding:12px;font-size:13px;line-height:1.75;word-break:break-all;max-height:340px;overflow:auto;white-space:pre-wrap;font-family:Consolas,Menlo,monospace}
+.out:empty{display:none}
+.bar{height:8px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;margin:8px 0}
+.barfill{height:100%;width:0;border-radius:99px;transition:.35s;background:linear-gradient(90deg,var(--cy),var(--gr))}
+.klist{list-style:none;display:grid;gap:8px}
+.klist li{background:rgba(0,0,0,.25);border:1px solid var(--brd);border-radius:10px;padding:10px 14px;font-size:13.5px;line-height:1.65}
+.klist li::before{content:"▸ ";color:var(--cy)}
+.klist li.warn::before{content:"⚠ ";color:var(--am)}
+.klist li.bad::before{content:"✕ ";color:var(--rd)}
+.klist li.ok::before{content:"✓ ";color:var(--gr)}
+.klist li label{display:flex;gap:9px;align-items:flex-start;cursor:pointer}
+.klist input[type=checkbox]{width:15px;height:15px;margin-top:3px;accent-color:var(--cy)}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{color:var(--cy);text-align:left;padding:7px 9px;border-bottom:1px solid var(--brd);font-weight:600}
+.tbl td{padding:7px 9px;border-bottom:1px solid rgba(255,255,255,.05);color:#c6cede}
+.tbl tr:hover td{background:rgba(255,255,255,.03)}
+.scorebig{font-size:44px;font-weight:800;background:linear-gradient(90deg,var(--cy),var(--pu));-webkit-background-clip:text;background-clip:text;color:transparent}
+footer{border-top:1px solid var(--brd);margin-top:40px;padding:26px 0 10px;color:var(--mut);font-size:12.5px;line-height:1.8}
+footer b{color:var(--am)}
+.mono{font-family:Consolas,Menlo,monospace;font-size:12px}
+.pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:99px;margin:2px 3px 2px 0;border:1px solid var(--brd)}
+@media(max-width:640px){.hero h1{font-size:26px}.grid{grid-template-columns:1fr}}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:99px}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+<div class="logo">🛡️ <b>SEC TOOLKIT</b></div>
+<span class="badge">日志监控与威胁检测</span>
+</div></nav>
+<div class="wrap">
+<header class="hero">
+<h1>📊 <em>日志分析工作台</em></h1>
+<p class="lead">粘贴任意日志自动统计并高亮攻击特征行；grep 场景速查；SIEM 查询组装。</p>
+<div class="tags"><span class="tag">日志监控与威胁检测</span><span class="tag">日志快速分析器</span><span class="tag">日志排查 grep 速查</span><span class="tag">SIEM 查询构建器</span></div>
+</header>
+
+<section class="panel">
+<h2>📌 实际应用场景</h2>
+<div class="scen"><b>适用角色：</b>SOC 分析师、安全运维与日志审计人员<br><b>解决痛点：</b>粘贴任意日志自动统计并高亮攻击特征行；grep 场景速查；SIEM 查询组装。<br><b>使用方式：</b>下方功能模块即开即用，输入你的数据即可得到结果；页面可离线保存与转发。</div>
+</section>
+
+<section class="panel">
+<h2>🧰 功能工具</h2>
+<div class="grid"><div class="card"><h3>📈 日志快速分析器</h3><p class="d">粘贴日志，自动统计级别分布、TOP IP、状态码，并高亮可疑行（扫描/爆破特征）。</p><textarea id="lp_in" placeholder="粘贴任意文本日志（Web/系统/应用日志均可）"></textarea>
+<div class="row"><button onclick="f_lp()">分析</button></div>
+<div id="lp_out" class="out"></div></div>
+<div class="card"><h3>🔎 日志排查 grep 速查</h3><p class="d">按场景检索可复制的 grep / findstr 命令，覆盖 Web 安全排查高频模式。</p><input id="gr_q" placeholder="搜索场景，如 爆破 / SQL / 爬虫 / 时间" oninput="f_gr()">
+<div id="gr_out" style="max-height:320px;overflow:auto"></div></div>
+<div class="card"><h3>🔧 SIEM 查询构建器</h3><p class="d">可视化组装常见 SIEM 检索条件，输出 Lucene/SPL 风格查询语句。</p><div class="row"><input id="sq_ip" placeholder="源 IP（可选）" style="flex:1"><input id="sq_k" placeholder="关键字，如 failed" style="flex:1"><input id="sq_h" placeholder="主机名（可选）" style="flex:1"></div>
+<div class="row"><select id="sq_e" style="flex:1"><option value="lucene">Lucene (ELK)</option><option value="spl">SPL (Splunk)</option></select><button onclick="f_sq()">生成查询</button></div>
+<div id="sq_out" class="out" style="cursor:pointer" onclick="copyId('sq_out')" title="点击复制"></div></div></div>
+</section>
+
+<section class="panel">
+<h2>💡 使用建议与安全提示</h2>
+<ul class="klist"><li><b>场景要点：</b>粘贴任意日志自动统计并高亮攻击特征行；grep 场景速查；SIEM 查询组装。</li><li><b>数据不出本机</b>：所有计算都在你的浏览器内完成，不联网、不上传，可放心处理敏感数据。</li><li><b>最小权限</b>：使用任何安全工具时使用够用即可的权限，避免工具本身成为风险源。</li></ul>
+</section>
+
+<footer>
+<div>⚖️ <b>合法合规声明</b>：本工具仅供安全学习、防御加固与授权测试使用。任何未经授权对他人系统的访问、扫描或测试均属违法行为，使用者需自行承担全部责任。</div>
+<div>生成日期：2026-10-06 ｜ 单文件离线应用，所有计算均在本地浏览器完成，不会上传任何数据。</div>
+</footer>
+</div>
+<script>
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function copyId(id){var el=document.getElementById(id);if(el){navigator.clipboard.writeText(el.value||el.textContent);}}
+function f_lp(){var v=document.getElementById('lp_in').value;var o=document.getElementById('lp_out');
+if(!v.trim()){o.textContent="";return}
+var lines=v.split(/\r?\n/).filter(Boolean);
+var ips={},codes={},lvls={error:0,warn:0,info:0,debug:0};var sus=[];
+lines.forEach((l,i)=>{var ip=l.match(/\b(\d{1,3}(?:\.\d{1,3}){3})\b/);if(ip){ips[ip[1]]=(ips[ip[1]]||0)+1}
+var c=l.match(/\s(\d{3})\s/);if(c&&/^(1|2|3|4|5)\d\d$/.test(c[1]))codes[c[1]]=(codes[c[1]]||0)+1;
+if(/\berror\b|错误|失败|failed/i.test(l))lvls.error++;
+else if(/\bwarn(ing)?\b|警告/i.test(l))lvls.warn++;
+else if(/\binfo\b|信息/i.test(l))lvls.info++;
+if(/union select|\/\.\.|\.env|wp-login|xmlrpc|\.git\/|base64_decode|cmd=|<\s*script|select.*from/i.test(l))sus.push("L"+(i+1)+": "+l.slice(0,120))});
+var topIps=Object.entries(ips).sort((a,b)=>b[1]-a[1]).slice(0,5);
+o.textContent="总行数："+lines.length+"\n级别统计：错误 "+lvls.error+" ｜ 警告 "+lvls.warn+" ｜ 信息 "+lvls.info+"\n\nTOP IP：\n"+(topIps.length?topIps.map(x=>"· "+x[0]+" ("+x[1]+" 次)").join("\n"):"未识别 IP")+"\n\n状态码分布：\n"+(Object.keys(codes).length?Object.entries(codes).sort().map(x=>"· "+x[0]+" × "+x[1]).join("\n"):"未识别")+"\n\n⚠ 可疑行（"+sus.length+"）：\n"+(sus.slice(0,10).join("\n")||"无")+(sus.length>10?"\n... 其余 "+(sus.length-10)+" 条略":"");
+}
+var GR=[["查找爆破尝试","grep -E \"(failed|invalid|error).*password\" auth.log | awk '{print $11}' | sort | uniq -c | sort -rn | head","认证日志中含 failed password 的 IP 排行"],["定位 SQL 注入","grep -iE \"union.*select|or 1=1|'--\" access.log","Web 访问日志中的注入探针"],["找 webshell 访问","grep -E \"(eval|assert|cmd=|pass=)\" access.log","URL 参数中出现执行函数名"],["统计爬虫","awk '{print $1}' access.log | sort | uniq -c | sort -rn | head -20","访问次数最高的 IP"],["按分钟聚合错误","grep ERROR app.log | cut -c1-16 | uniq -c","快速定位故障时间点"],["Windows 查事件","findstr /i /c:\"4625\" security.evtx","Windows 下用 findstr 粗筛事件ID"],["慢请求排查","awk '$NF>3 {print}' access.log","假设日志末列为耗时（秒），找 >3s 请求"],["敏感文件扫描","grep -E \"\\.env|\\.git|\\.svn|wp-config|backup\" access.log","有人探测配置文件痕迹"],["排除正常流量","grep -v \"healthcheck\" app.log | grep ERROR","过滤健康检查后看真实错误"],["提取状态码分布","awk '{print $9}' access.log | sort | uniq -c | sort -rn","NGINX/Apache 通用日志格式第9字段"]];
+function f_gr(){var q=document.getElementById('gr_q').value.toLowerCase();var rows=GR.filter(r=>!q||r[0].toLowerCase().includes(q)||r[2].toLowerCase().includes(q));
+document.getElementById('gr_out').innerHTML=rows.map(r=>"<div style='margin-bottom:12px'><b style='color:var(--cy);font-size:13px'>"+r[0]+"</b><div class='out mono' style='margin-top:5px;cursor:pointer' onclick=\"navigator.clipboard.writeText(this.textContent)\">"+esc(r[1])+"</div><div style='color:var(--mut);font-size:12px;margin-top:4px'>"+r[2]+"</div></div>").join("")||"<div class='out'>无匹配场景</div>";}f_gr();
+function f_sq(){var ip=document.getElementById('sq_ip').value.trim();var k=document.getElementById('sq_k').value.trim();var h=document.getElementById('sq_h').value.trim();var e=document.getElementById('sq_e').value;
+var c=[];if(ip)c.push("src:\""+ip+"\"");if(k)c.push("\""+k+"\"");if(h)c.push("host:\""+h+"\"");
+if(e==="spl"){var q=(ip?"(src=\""+ip+"\") ":"")+(k?"search \""+k+"\" ":"")+(h?"| search host=\""+h+"\"":"");
+document.getElementById('sq_out').textContent=q.trim()||"* | head 100";}
+else document.getElementById('sq_out').textContent=c.length?c.join(" AND "):"*";}
+</script>
+</body>
+</html>
